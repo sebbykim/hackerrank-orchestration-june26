@@ -1,0 +1,14 @@
+# OS / editor cruft
+.DS_Store
+
+# recovery backup of the org repo's git dir (kept locally, never committed)
+hackerrank-orchestrate-june26/.git.org-backup/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# secrets
+.env
