@@ -91,13 +91,17 @@ from constants import (
     PROMPT_IMAGE_SOURCE_KEY_MEDIA_TYPE,
     PROMPT_IMAGE_SOURCE_KEY_TYPE,
     PROMPT_IMAGE_SOURCE_TYPE_BASE64,
+    PROMPT_IMAGE_MAGIC_HEADER_BYTES,
     PROMPT_JPEG_SUFFIXES,
+    PROMPT_JPEG_MAGIC_PREFIX,
     PROMPT_JSON_INDENT,
     PROMPT_MEDIA_TYPE_JPEG,
     PROMPT_MEDIA_TYPE_OCTET_STREAM,
     PROMPT_MEDIA_TYPE_PNG,
     PROMPT_MEDIA_TYPE_WEBP,
+    PROMPT_PNG_MAGIC_PREFIX,
     PROMPT_PNG_SUFFIX,
+    PROMPT_RIFF_MAGIC_PREFIX,
     PROMPT_MESSAGE_KEY_CONTENT,
     PROMPT_MESSAGE_KEY_MESSAGES,
     PROMPT_MESSAGE_KEY_ROLE,
@@ -109,6 +113,9 @@ from constants import (
     PROMPT_SYSTEM_REVIEWER_ROLE,
     PROMPT_USER_TEXT_TEMPLATE,
     PROMPT_VERSION,
+    PROMPT_WEBP_MAGIC_MARKER,
+    PROMPT_WEBP_MAGIC_MARKER_END,
+    PROMPT_WEBP_MAGIC_MARKER_START,
     PROMPT_WEBP_SUFFIX,
     SAMPLE_CSV,
 )
@@ -277,11 +284,23 @@ RESPONSE_JSON_SCHEMA = _object_schema(
 
 
 def _media_type(path: Path) -> str:
-    """Map local image suffixes to Claude image-block media types.
+    """Map local image bytes to Claude image-block media types.
 
-    The dataset currently uses JPEGs, but keeping PNG/WebP support costs nothing
-    and avoids hardcoding one extension into the prompt builder.
+    Several dataset files have misleading `.jpg` suffixes, so magic-byte
+    detection comes first and suffixes are only a fallback.
     """
+    header = path.read_bytes()[:PROMPT_IMAGE_MAGIC_HEADER_BYTES]
+    if header.startswith(PROMPT_JPEG_MAGIC_PREFIX):
+        return PROMPT_MEDIA_TYPE_JPEG
+    if header.startswith(PROMPT_PNG_MAGIC_PREFIX):
+        return PROMPT_MEDIA_TYPE_PNG
+    if (
+        header.startswith(PROMPT_RIFF_MAGIC_PREFIX)
+        and header[PROMPT_WEBP_MAGIC_MARKER_START:PROMPT_WEBP_MAGIC_MARKER_END]
+        == PROMPT_WEBP_MAGIC_MARKER
+    ):
+        return PROMPT_MEDIA_TYPE_WEBP
+
     suffix = path.suffix.lower()
     if suffix in PROMPT_JPEG_SUFFIXES:
         return PROMPT_MEDIA_TYPE_JPEG

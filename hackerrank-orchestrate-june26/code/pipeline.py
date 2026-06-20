@@ -47,6 +47,8 @@ from constants import (
     OUTPUT_BOOLEAN_FALSE,
     PIPELINE_FALLBACK_EVIDENCE_REASON,
     PIPELINE_FALLBACK_STATUS_JUSTIFICATION,
+    PREFILTER_KEY_DEDUP,
+    PREFILTER_KEY_KEPT_IMAGES,
     RISK_FLAG_MANUAL_REVIEW_REQUIRED,
     SEVERITY_UNKNOWN,
     VALIDATE_SUPPORTING_IMAGE_IDS_NONE,
@@ -142,12 +144,18 @@ def process_claim(
             load_evidence_requirements()
         images = resolve_image_paths(row[COL_IMAGE_PATHS])
         prefilter_result = prefilter_claim(images)
+        model_images = list(
+            prefilter_result.get(PREFILTER_KEY_DEDUP, {}).get(
+                PREFILTER_KEY_KEPT_IMAGES,
+                images,
+            )
+        )
         history_row = history.get(row[COL_USER_ID], {})
         claim_context = _claim_context(row, history_row, prefilter_result)
         key = cache_key(row, images)
         cached_response = load_cached_response(key, cache_dir)
         if cached_response is None:
-            model_response = model_client.predict(claim_context, images)
+            model_response = model_client.predict(claim_context, model_images)
             write_cached_response(key, model_response, cache_dir)
         else:
             model_response = cached_response

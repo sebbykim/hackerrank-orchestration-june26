@@ -39,7 +39,6 @@ from constants import (
     CLAUDE_REQUEST_KEY_MODEL,
     CLAUDE_REQUEST_KEY_SYSTEM,
     CLAUDE_REQUEST_KEY_TEMPERATURE,
-    CLAUDE_REQUEST_KEY_THINKING,
     CLAUDE_REQUEST_KEY_TOOL_CHOICE,
     CLAUDE_REQUEST_KEY_TOOLS,
     CLAUDE_RESPONSE_CONTENT_ATTR,
@@ -47,9 +46,6 @@ from constants import (
     CLAUDE_RETRY_BACKOFF_SECONDS,
     CLAUDE_SMOKE_RESPONSE_KEY_OK,
     CLAUDE_TEMPERATURE,
-    CLAUDE_THINKING_KEY_BUDGET_TOKENS,
-    CLAUDE_THINKING_BUDGET_TOKENS,
-    CLAUDE_THINKING_TYPE_ENABLED,
     CLAUDE_TOOL_CHOICE_KEY_DISABLE_PARALLEL,
     CLAUDE_TOOL_CHOICE_TYPE,
     CLAUDE_TOOL_DESCRIPTION,
@@ -61,6 +57,10 @@ from constants import (
     CLAUDE_TOOL_RESPONSE_INPUT_ATTR,
     CLAUDE_TOOL_TYPE,
     DEFAULT_CLAUDE_MODEL_ID,
+    DOTENV_COMMENT_PREFIX,
+    DOTENV_FILE,
+    DOTENV_KEY_VALUE_SEPARATOR,
+    DOTENV_QUOTE_CHARS,
     MODEL_ID_ENV_VAR,
     PROMPT_CONTENT_KEY_TEXT,
     PROMPT_CONTENT_KEY_TYPE,
@@ -106,13 +106,47 @@ class ModelClientError(RuntimeError):
     """
 
 
+def _load_env_file(path: str | os.PathLike[str] = DOTENV_FILE) -> None:
+    """Load simple KEY=value entries from the project .env into os.environ.
+
+    The challenge allows `.env` files, but secrets must still be consumed as
+    environment variables. This helper supports the common dotenv subset needed
+    for `ANTHROPIC_API_KEY` without adding an unapproved dependency, and it
+    never overwrites an already-exported environment variable.
+    """
+    env_path = os.fspath(path)
+    if not os.path.exists(env_path):
+        return
+    with open(env_path, encoding="utf-8") as env_file:
+        for raw_line in env_file:
+            stripped = raw_line.strip()
+            if not stripped or stripped.startswith(DOTENV_COMMENT_PREFIX):
+                continue
+            key, separator, raw_value = stripped.partition(DOTENV_KEY_VALUE_SEPARATOR)
+            if separator != DOTENV_KEY_VALUE_SEPARATOR:
+                continue
+            normalized_key = key.strip()
+            if not normalized_key or normalized_key in os.environ:
+                continue
+            normalized_value = raw_value.strip()
+            if (
+                len(normalized_value) >= 2
+                and normalized_value[0] == normalized_value[-1]
+                and normalized_value[0] in DOTENV_QUOTE_CHARS
+            ):
+                normalized_value = normalized_value[1:-1]
+            os.environ[normalized_key] = normalized_value
+
+
 class ClaudeModelClient(ModelClient):
     """Call Claude through the shared ModelClient boundary.
 
     The client uses the pinned Anthropic SDK, the Phase 5 prompt builder, a
     forced structured tool call backed by RESPONSE_JSON_SCHEMA, prompt caching
-    on the stable system prefix, and bounded retries. It raises ModelClientError
-    on failure so the Phase 7 pipeline can emit a valid fallback row.
+    on the stable system prefix, and bounded retries. Adaptive thinking is not
+    sent because Claude rejects thinking when tool_choice forces a tool call.
+    It raises ModelClientError on failure so the Phase 7 pipeline can emit a
+    valid fallback row.
     """
 
     def __init__(
@@ -134,6 +168,7 @@ class ClaudeModelClient(ModelClient):
         Raises:
             ModelClientError: If no API key is available.
         """
+        _load_env_file()
         resolved_api_key = api_key or os.environ.get(ANTHROPIC_API_KEY_ENV_VAR)
         if not resolved_api_key:
             raise ModelClientError(CLAUDE_ERROR_MISSING_API_KEY)
@@ -232,10 +267,6 @@ def _claude_request_payload(
         CLAUDE_REQUEST_KEY_MODEL: model_id,
         CLAUDE_REQUEST_KEY_MAX_TOKENS: CLAUDE_MAX_TOKENS,
         CLAUDE_REQUEST_KEY_TEMPERATURE: CLAUDE_TEMPERATURE,
-        CLAUDE_REQUEST_KEY_THINKING: {
-            CLAUDE_TOOL_KEY_TYPE: CLAUDE_THINKING_TYPE_ENABLED,
-            CLAUDE_THINKING_KEY_BUDGET_TOKENS: CLAUDE_THINKING_BUDGET_TOKENS,
-        },
         CLAUDE_REQUEST_KEY_SYSTEM: _claude_system_blocks(
             messages_payload[PROMPT_MESSAGE_KEY_SYSTEM]
         ),
