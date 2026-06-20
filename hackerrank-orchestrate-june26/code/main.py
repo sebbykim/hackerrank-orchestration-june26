@@ -5,7 +5,7 @@ WHAT:  This file runs the claim-verification pipeline over the provided test
        claims and writes output.csv in the required 14-column schema.
 WHY:   The project contract expects a stable, documented entry point that the
        evaluator and reviewer can run without discovering internal modules.
-STEPS: Implements STEPS.md Phase 7 item 2.
+STEPS: Implements STEPS.md Phase 7 item 2 and Phase 8 item 2.
 IN:    dataset/claims.csv plus supporting CSVs, local images, and selected
        model-client configuration.
 OUT:   output.csv at the repository root.
@@ -20,36 +20,35 @@ from typing import Iterable, List
 from constants import (
     CACHE_DIR,
     CLAIMS_CSV,
+    DEFAULT_CLAUDE_MODEL_ID,
     EXPECTED_TEST_CLAIMS_ROW_COUNT,
     MAIN_ARG_CACHE_DIR,
     MAIN_ARG_CLAIMS,
     MAIN_ARG_CLIENT,
-    MAIN_ARG_CLIENT_CHOICES,
     MAIN_ARG_OUTPUT,
     MAIN_DESCRIPTION,
-    MAIN_UNSUPPORTED_CLIENT_TEMPLATE,
+    MODEL_ID_ENV_VAR,
     OUTPUT_COLUMNS,
     OUTPUT_CSV,
+    PIPELINE_CLIENT_CLAUDE,
     PIPELINE_CLIENT_ENV_VAR,
     PIPELINE_CLIENT_MOCK,
 )
 from io_loaders import Row, load_claims, load_evidence_requirements, load_history
 from mock_model import MockModelClient
-from model_client import ModelClient
+from model_client import ClaudeModelClient, ModelClient
 from pipeline import process_claim
 
 
 def _build_parser() -> argparse.ArgumentParser:
     """Build the Phase 7 command-line parser.
 
-    The only available client in Phase 7 is the deterministic mock; the flag is
-    still present because STEPS requires client selection by flag/env before the
-    real client is added in Phase 8.
+    Phase 8 supports the deterministic mock, the default/env Claude model, or a
+    model ID provided directly as the client value.
     """
     parser = argparse.ArgumentParser(description=MAIN_DESCRIPTION)
     parser.add_argument(
         MAIN_ARG_CLIENT,
-        choices=MAIN_ARG_CLIENT_CHOICES,
         default=os.environ.get(PIPELINE_CLIENT_ENV_VAR, PIPELINE_CLIENT_MOCK),
     )
     parser.add_argument(
@@ -73,12 +72,17 @@ def _build_parser() -> argparse.ArgumentParser:
 def _model_client(client_name: str) -> ModelClient:
     """Instantiate the selected model client.
 
-    Phase 7 only supports the mock client so the pipeline runs with zero API
-    calls. The explicit factory keeps Phase 8's real-client addition isolated.
+    `mock` keeps the zero-cost deterministic path. `claude` uses
+    ANTHROPIC_MODEL_ID or the default Claude model. Any other value is treated
+    as an explicit Claude model ID.
     """
     if client_name == PIPELINE_CLIENT_MOCK:
         return MockModelClient()
-    raise ValueError(MAIN_UNSUPPORTED_CLIENT_TEMPLATE.format(client_name=client_name))
+    if client_name == PIPELINE_CLIENT_CLAUDE:
+        return ClaudeModelClient(
+            model_id=os.environ.get(MODEL_ID_ENV_VAR, DEFAULT_CLAUDE_MODEL_ID)
+        )
+    return ClaudeModelClient(model_id=client_name)
 
 
 def _write_output(rows: Iterable[Row], output_path: Path) -> None:
