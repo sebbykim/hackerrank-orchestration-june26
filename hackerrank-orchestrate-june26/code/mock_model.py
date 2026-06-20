@@ -39,6 +39,7 @@ from constants import (
     COL_SEVERITY,
     COL_SUPPORTING_IMAGE_IDS,
     COL_USER_CLAIM,
+    COL_USER_ID,
     COL_VALID_IMAGE,
     ISSUE_TYPE_UNKNOWN,
     MOCK_EVIDENCE_REASON_NOT_ENOUGH_INFORMATION,
@@ -79,6 +80,8 @@ from model_client import ModelClient
 
 
 ImagePayload = Any
+
+
 def _image_id(image: ImagePayload) -> str:
     """Extract a stable image ID from supported Phase 4 image payload shapes.
 
@@ -286,6 +289,10 @@ class MockModelClient(ModelClient):
 
         has_supporting_image = first_usable_image_id is not None
         claim_level = {
+            COL_USER_ID: str(input_row.get(COL_USER_ID, "")),
+            COL_IMAGE_PATHS: str(input_row.get(COL_IMAGE_PATHS, "")),
+            COL_USER_CLAIM: str(input_row.get(COL_USER_CLAIM, "")),
+            COL_CLAIM_OBJECT: claim_object,
             COL_EVIDENCE_STANDARD_MET: has_supporting_image,
             COL_EVIDENCE_STANDARD_MET_REASON: (
                 MOCK_EVIDENCE_REASON_SUPPORTED
@@ -348,6 +355,10 @@ def run_smoke_test() -> None:
     """
     client = MockModelClient()
     required_claim_keys = {
+        COL_USER_ID,
+        COL_IMAGE_PATHS,
+        COL_USER_CLAIM,
+        COL_CLAIM_OBJECT,
         COL_EVIDENCE_STANDARD_MET,
         COL_EVIDENCE_STANDARD_MET_REASON,
         COL_RISK_FLAGS,
