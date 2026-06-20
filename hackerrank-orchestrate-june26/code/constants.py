@@ -383,3 +383,146 @@ PREFILTER_PHASH_DUPLICATE_DISTANCE_THRESHOLD = 8
 # Calibrated in Phase 2: sample brightness min=38.03. A 5.0 dead-image cutoff
 # catches fully black/unreadable decodes without short-circuiting dark but usable photos.
 PREFILTER_DEAD_MEAN_BRIGHTNESS_THRESHOLD = 5.0
+
+CLAIM_EXTRACTION_KEY_CLAIMED_ISSUE_TYPE = "claimed_issue_type"
+CLAIM_EXTRACTION_KEY_CLAIMED_OBJECT_PART = "claimed_object_part"
+CLAIM_EXTRACTION_KEY_SEVERITY_HINT = "severity_hint"
+CLAIM_EXTRACTION_KEY_UNCERTAINTY = "uncertainty"
+CLAIM_EXTRACTION_KEY_EVIDENCE_NEEDED = "evidence_needed"
+CLAIM_TEXT_NORMALIZED_SEPARATOR = " "
+CLAIM_CONVERSATION_TURN_SEPARATOR = "|"
+CLAIM_CUSTOMER_SPEAKER_PREFIX = "customer:"
+CLAIM_EVIDENCE_NEEDED_TEMPLATE = "{base}; focus on {object_part} and {issue_type}"
+CLAIM_EVIDENCE_NEEDED_UNKNOWN_TEMPLATE = "{base}; focus on the claimed damage and part"
+CLAIM_EVIDENCE_NEEDED_GENERIC = "clear image of the claimed object, part, and condition"
+
+CLAIM_UNCERTAINTY_LOW = "low"
+CLAIM_UNCERTAINTY_MEDIUM = "medium"
+CLAIM_UNCERTAINTY_HIGH = "high"
+
+CLAIM_UNCERTAINTY_HIGH_KEYWORDS = frozenset(
+    (
+        "not fully sure",
+        "not sure",
+        "confused",
+        "could not decide",
+        "overthinking",
+        "do not want to claim the wrong thing",
+        "not sure if",
+    )
+)
+CLAIM_UNCERTAINTY_MEDIUM_KEYWORDS = frozenset(
+    (
+        "i think",
+        "maybe",
+        "may be",
+        "might",
+        "seems",
+        "seem",
+        "looks like",
+        "appears",
+        "worried",
+        "possible",
+        "lag raha",
+        "lagta",
+    )
+)
+
+CLAIM_SEVERITY_HIGH_KEYWORDS = frozenset(
+    (
+        "shattered",
+        "shatter",
+        "badly",
+        "severe",
+        "missing",
+        "not inside",
+        "broken",
+        "broke",
+        "torn open",
+        "unreadable",
+    )
+)
+CLAIM_SEVERITY_LOW_KEYWORDS = frozenset(
+    (
+        "small",
+        "minor",
+        "nothing major",
+        "slightly",
+        "scratch",
+        "mark",
+        "scuff",
+    )
+)
+CLAIM_SEVERITY_MEDIUM_KEYWORDS = frozenset(
+    (
+        "dent",
+        "crack",
+        "cracked",
+        "crushed",
+        "water damaged",
+        "water damage",
+        "stain",
+        "torn",
+        "damaged",
+        "damage",
+    )
+)
+
+CLAIM_ISSUE_KEYWORDS = (
+    (ISSUE_TYPE_GLASS_SHATTER, ("shattered", "shatter")),
+    (ISSUE_TYPE_MISSING_PART, ("missing", "not inside", "faltan", "came off")),
+    (ISSUE_TYPE_BROKEN_PART, ("broken", "broke", "breakage", "wobbles", "toot gaya")),
+    (ISSUE_TYPE_CRACK, ("crack", "cracked", "cracking", "crack lines")),
+    (ISSUE_TYPE_DENT, ("dent", "dented", "hail dents", "ding")),
+    (ISSUE_TYPE_SCRATCH, ("scratch", "scratched", "scrape", "mark", "scuff")),
+    (ISSUE_TYPE_TORN_PACKAGING, ("torn", "opened", "open jaisa", "phati", "seal affected")),
+    (ISSUE_TYPE_CRUSHED_PACKAGING, ("crushed", "crush", "dab gaya", "bad condition")),
+    (ISSUE_TYPE_WATER_DAMAGE, ("water damage", "water damaged", "wet", "liquid damage")),
+    (ISSUE_TYPE_STAIN, ("stain", "stained", "oily mark", "oil stain", "sticky")),
+)
+
+CLAIM_OBJECT_PART_KEYWORDS_BY_OBJECT = MappingProxyType(
+    {
+        CLAIM_OBJECT_CAR: (
+            (OBJECT_PART_FRONT_BUMPER, ("front bumper",)),
+            (OBJECT_PART_REAR_BUMPER, ("rear bumper", "back bumper", "rear side", "back of the car")),
+            (OBJECT_PART_SIDE_MIRROR, ("side mirror", "left mirror", "mirror")),
+            (OBJECT_PART_HEADLIGHT, ("headlight", "front light")),
+            (OBJECT_PART_TAILLIGHT, ("taillight", "back light", "tail light")),
+            (OBJECT_PART_WINDSHIELD, ("windshield", "front glass")),
+            (OBJECT_PART_DOOR, ("door", "door panel")),
+            (OBJECT_PART_HOOD, ("hood", "top panel")),
+            (OBJECT_PART_FENDER, ("fender",)),
+            (OBJECT_PART_QUARTER_PANEL, ("quarter panel",)),
+            (OBJECT_PART_BODY, ("body panel", "body")),
+        ),
+        CLAIM_OBJECT_LAPTOP: (
+            (OBJECT_PART_SCREEN, ("screen", "display", "pantalla")),
+            (OBJECT_PART_KEYBOARD, ("keyboard", "keys", "keycaps", "teclas")),
+            (OBJECT_PART_TRACKPAD, ("trackpad", "palm-rest", "palm rest")),
+            (OBJECT_PART_HINGE, ("hinge",)),
+            (OBJECT_PART_LID, ("lid",)),
+            (OBJECT_PART_CORNER, ("corner",)),
+            (OBJECT_PART_PORT, ("port",)),
+            (OBJECT_PART_BASE, ("base",)),
+            (OBJECT_PART_BODY, ("outer body", "body", "side edge")),
+        ),
+        CLAIM_OBJECT_PACKAGE: (
+            (OBJECT_PART_PACKAGE_CORNER, ("package corner", "box corner", "corner")),
+            (OBJECT_PART_SEAL, ("seal", "tape", "flap")),
+            (OBJECT_PART_LABEL, ("label",)),
+            (OBJECT_PART_CONTENTS, ("contents", "product inside", "item inside")),
+            (OBJECT_PART_ITEM, ("item", "product")),
+            (OBJECT_PART_PACKAGE_SIDE, ("package side", "surface", "outside")),
+            (OBJECT_PART_BOX, ("box", "delivery box", "shipping box", "cardboard box", "package")),
+        ),
+    }
+)
+
+CLAIM_EVIDENCE_NEEDED_BY_OBJECT = MappingProxyType(
+    {
+        CLAIM_OBJECT_CAR: "clear image of the claimed car part and visible surface damage",
+        CLAIM_OBJECT_LAPTOP: "clear image of the claimed laptop part and visible physical damage",
+        CLAIM_OBJECT_PACKAGE: "clear image of the package area or contents relevant to the claim",
+    }
+)
