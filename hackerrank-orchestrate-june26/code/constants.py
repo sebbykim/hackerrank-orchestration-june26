@@ -39,6 +39,65 @@ EXPECTED_TEST_CLAIMS_ROW_COUNT = 44
 EXPECTED_HISTORY_ROW_COUNT = 47
 EXPECTED_EVIDENCE_REQUIREMENTS_ROW_COUNT = 11
 
+PREFILTER_KEY_IMAGE_ID = "image_id"
+PREFILTER_KEY_PATH = "path"
+PREFILTER_KEY_DECODE_OK = "decode_ok"
+PREFILTER_KEY_BLUR_LAPLACIAN_VAR = "blur_laplacian_var"
+PREFILTER_KEY_MEAN_BRIGHTNESS = "mean_brightness"
+PREFILTER_KEY_GLARE_FRACTION = "glare_fraction"
+PREFILTER_KEY_WIDTH = "width"
+PREFILTER_KEY_HEIGHT = "height"
+PREFILTER_KEY_FLAGS = "flags"
+PREFILTER_KEY_EXIF = "exif"
+PREFILTER_KEY_NON_ORIGINAL_SIGNAL = "non_original_signal"
+PREFILTER_KEY_SIGNAL_SCORE = "signal_score"
+PREFILTER_KEY_SIGNAL_REASONS = "signal_reasons"
+PREFILTER_KEY_MISSING_CAMERA_EXIF = "missing_camera_exif"
+PREFILTER_KEY_EDITOR_SOFTWARE = "editor_software"
+PREFILTER_KEY_SCREENSHOT_DIMENSIONS = "screenshot_dimensions"
+PREFILTER_KEY_PER_IMAGE = "per_image"
+PREFILTER_KEY_KEPT_IMAGE_IDS = "kept_image_ids"
+PREFILTER_KEY_KEPT_IMAGES = "kept_images"
+PREFILTER_KEY_DROPPED_DUPLICATES = "dropped_duplicates"
+PREFILTER_KEY_DEDUP = "dedup"
+PREFILTER_KEY_ALL_IMAGES_DEAD = "all_images_dead"
+PREFILTER_DUPLICATE_TEST_SUFFIX = "_duplicate"
+
+EXIF_REASON_MISSING_CAMERA = "missing_camera_exif"
+EXIF_REASON_EDITOR_SOFTWARE = "editor_software"
+EXIF_REASON_SCREENSHOT_DIMENSIONS = "screenshot_dimensions"
+# EXIF tag IDs cover common camera provenance fields: make, model, software,
+# original timestamp, and lens model. Missing tags are weak evidence only.
+EXIF_CAMERA_TAG_IDS = frozenset((271, 272, 306, 36867, 42036))
+EXIF_SOFTWARE_TAG_ID = 305
+EXIF_EDITOR_SOFTWARE_MARKERS = frozenset(
+    (
+        "adobe",
+        "photoshop",
+        "gimp",
+        "lightroom",
+        "snapseed",
+        "pixelmator",
+    )
+)
+# Screenshot-dimension heuristic: only long, phone/screen-shaped images trigger
+# this weak signal; ordinary landscape photos are left to the VLM.
+EXIF_SCREENSHOT_LONG_EDGE_MIN = 1000
+EXIF_SCREENSHOT_WIDE_ASPECT_RATIO = 1.75
+EXIF_SCREENSHOT_TALL_ASPECT_RATIO = 0.57
+EXIF_MISSING_CAMERA_SIGNAL_SCORE = 1
+EXIF_EDITOR_SOFTWARE_SIGNAL_SCORE = 2
+EXIF_SCREENSHOT_DIMENSION_SIGNAL_SCORE = 1
+# Phase 2 calibration: missing camera EXIF appears across all sample images, so
+# it is kept as a weak score but does not set the boolean signal alone.
+EXIF_NON_ORIGINAL_SIGNAL_SCORE_THRESHOLD = 2
+
+PREFILTER_DEFAULT_IMAGE_DIMENSION = 0
+PREFILTER_DEFAULT_MEASUREMENT_VALUE = 0.0
+PREFILTER_DEFAULT_SIGNAL_SCORE = 0
+# Near-white saturation cutoff used to compute glare_fraction.
+PREFILTER_GLARE_PIXEL_VALUE_THRESHOLD = 245
+
 COL_USER_ID = "user_id"
 COL_IMAGE_PATHS = "image_paths"
 COL_USER_CLAIM = "user_claim"
@@ -296,26 +355,31 @@ ALLOWED_SEVERITY = frozenset(
     )
 )
 
-# Placeholder values only. Phase 2 calibrates these on sample images before
-# pre-filter logic relies on them (STEPS Phase 0; design §5.1).
-PREFILTER_BLUR_LAPLACIAN_VAR_THRESHOLD = 0.0
+# Calibrated in Phase 2 on the 29 images referenced by the 20 labeled sample
+# rows: blur min=7.75, next=19.77, p10=38.42. A 30.0 cutoff flags only the
+# extreme bottom tail and leaves borderline images for the VLM (design §5.1).
+PREFILTER_BLUR_LAPLACIAN_VAR_THRESHOLD = 30.0
 
-# Placeholder values only. Phase 2 calibrates these on sample images before
-# pre-filter logic relies on them (STEPS Phase 0; design §5.1).
-PREFILTER_MEAN_BRIGHTNESS_LOW_THRESHOLD = 0.0
+# Calibrated in Phase 2: sample brightness min=38.03, next=49.35, p10=79.29.
+# A 45.0 cutoff marks only the darkest outlier as low-light signal.
+PREFILTER_MEAN_BRIGHTNESS_LOW_THRESHOLD = 45.0
 
-# Placeholder values only. Phase 2 calibrates these on sample images before
-# pre-filter logic relies on them (STEPS Phase 0; design §5.1).
-PREFILTER_GLARE_FRACTION_THRESHOLD = 1.0
+# Calibrated in Phase 2: sample glare p90=0.0438, top values=0.0563/0.0584.
+# A 0.057 cutoff catches the saturated outlier without flagging normal highlights.
+PREFILTER_GLARE_FRACTION_THRESHOLD = 0.057
 
-# Placeholder values only. Phase 2 calibrates these on sample images before
-# pre-filter logic relies on them (STEPS Phase 0; design §5.1).
-PREFILTER_MIN_IMAGE_WIDTH = 0
+# Calibrated in Phase 2: sample width min=275 and p10=356. A 320px floor flags
+# only very narrow uploads as a cropped/obstructed signal.
+PREFILTER_MIN_IMAGE_WIDTH = 320
 
-# Placeholder values only. Phase 2 calibrates these on sample images before
-# pre-filter logic relies on them (STEPS Phase 0; design §5.1).
-PREFILTER_MIN_IMAGE_HEIGHT = 0
+# Calibrated in Phase 2: sample height min=134 and p10=183. A 160px floor flags
+# strip-like uploads while preserving the next observed sample band.
+PREFILTER_MIN_IMAGE_HEIGHT = 160
 
-# Placeholder values only. Phase 2 calibrates these on sample images before
-# pre-filter logic relies on them (STEPS Phase 0; design §5.1).
-PREFILTER_PHASH_DUPLICATE_DISTANCE_THRESHOLD = 0
+# Calibrated in Phase 2: same-claim sample phash distances have minimum 24. A
+# distance <=8 is therefore conservative and intended only for exact/near duplicates.
+PREFILTER_PHASH_DUPLICATE_DISTANCE_THRESHOLD = 8
+
+# Calibrated in Phase 2: sample brightness min=38.03. A 5.0 dead-image cutoff
+# catches fully black/unreadable decodes without short-circuiting dark but usable photos.
+PREFILTER_DEAD_MEAN_BRIGHTNESS_THRESHOLD = 5.0
