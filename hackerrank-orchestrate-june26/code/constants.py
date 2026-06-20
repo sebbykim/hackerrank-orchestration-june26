@@ -715,3 +715,102 @@ MAIN_ARG_CLAIMS = "--claims"
 MAIN_ARG_OUTPUT = "--output"
 MAIN_ARG_CACHE_DIR = "--cache-dir"
 MAIN_DESCRIPTION = "Generate damage-claim predictions with the selected model client."
+
+EVALUATION_DIR = REPO_ROOT / "code" / "evaluation"
+EVALUATION_REPORT = EVALUATION_DIR / "evaluation_report.md"
+EVALUATION_CONFIG_MODEL_IDS = (
+    DEFAULT_CLAUDE_MODEL_ID,
+    COMPARISON_CLAUDE_MODEL_ID,
+)
+EVALUATION_CONFIG_LABEL_MOCK_SUFFIX = " (mock fallback; ANTHROPIC_API_KEY missing)"
+EVALUATION_API_KEY_PRESENT_NOTE = "ANTHROPIC_API_KEY was present; evaluation used real Claude clients."
+EVALUATION_API_KEY_MISSING_NOTE = (
+    "ANTHROPIC_API_KEY was not present; evaluation used deterministic mock fallback "
+    "clients under the two required Claude configuration labels."
+)
+EVALUATION_CACHE_NOTE = (
+    "Each configuration ran with an isolated temporary local cache so model IDs "
+    "could not share cached responses during comparison."
+)
+EVALUATION_REPORT_TITLE = "# Evaluation Report"
+EVALUATION_SECTION_RUN_MODE = "## Run mode"
+EVALUATION_SECTION_HEADLINE = "## Headline metrics"
+EVALUATION_SECTION_CONFUSION = "## Claim status confusion matrices"
+EVALUATION_SECTION_FIELD_ACCURACY = "## Per-field accuracy"
+EVALUATION_SECTION_OPERATIONAL = "## Operational analysis"
+EVALUATION_TABLE_SEPARATOR = "|---|---:|---:|---:|---:|---:|---:|"
+EVALUATION_FIELD_TABLE_SEPARATOR = "|---|---:|"
+EVALUATION_CONFUSION_TABLE_SEPARATOR = "|---|---:|---:|---:|"
+EVALUATION_NONE_VALUE = "none"
+EVALUATION_METRIC_FIELD_ACCURACY = "field_accuracy"
+EVALUATION_METRIC_CLAIM_STATUS_MACRO_F1 = "claim_status_macro_f1"
+EVALUATION_METRIC_CLAIM_STATUS_CONFUSION_MATRIX = "claim_status_confusion_matrix"
+EVALUATION_METRIC_RISK_FLAGS_JACCARD = "risk_flags_jaccard"
+EVALUATION_METRIC_SUPPORTING_IMAGE_IDS_JACCARD = "supporting_image_ids_jaccard"
+EVALUATION_CONFIG_KEY_LABEL = "label"
+EVALUATION_CONFIG_KEY_MODEL_ID = "model_id"
+EVALUATION_CONFIG_KEY_CLIENT = "client"
+EVALUATION_CONFIG_KEY_USES_REAL_API = "uses_real_api"
+EVALUATION_RESULT_KEY_METRICS = "metrics"
+EVALUATION_RESULT_KEY_RUNTIME_SECONDS = "runtime_seconds"
+EVALUATION_RESULT_KEY_MODEL_CALLS = "model_calls"
+EVALUATION_RESULT_KEY_PAID_MODEL_CALLS = "paid_model_calls"
+EVALUATION_RESULT_KEY_PREDICTED_ROWS = "predicted_rows"
+EVALUATION_TOKEN_KEY_INPUT = "input_tokens"
+EVALUATION_TOKEN_KEY_OUTPUT = "output_tokens"
+EVALUATION_TOKEN_KEY_TOTAL = "total_tokens"
+EVALUATION_HEADLINE_TABLE_HEADER = (
+    "| config | claim_status_macro_f1 | risk_flags_jaccard | "
+    "supporting_image_ids_jaccard | runtime_s | model_calls | paid_model_calls |"
+)
+EVALUATION_FIELD_TABLE_HEADER = "| field | exact_accuracy |"
+EVALUATION_CONFUSION_TABLE_HEADER = (
+    "| expected \\ predicted | supported | contradicted | not_enough_information |"
+)
+EVALUATION_STDOUT_WROTE_PREFIX = "wrote"
+EVALUATION_EXACT_ACCURACY_FIELDS = (
+    COL_EVIDENCE_STANDARD_MET,
+    COL_EVIDENCE_STANDARD_MET_REASON,
+    COL_ISSUE_TYPE,
+    COL_OBJECT_PART,
+    COL_CLAIM_STATUS,
+    COL_CLAIM_STATUS_JUSTIFICATION,
+    COL_VALID_IMAGE,
+    COL_SEVERITY,
+)
+EVALUATION_MULTI_VALUE_FIELDS = (
+    COL_RISK_FLAGS,
+    COL_SUPPORTING_IMAGE_IDS,
+)
+EVALUATION_CLAIM_STATUS_LABELS = (
+    CLAIM_STATUS_SUPPORTED,
+    CLAIM_STATUS_CONTRADICTED,
+    CLAIM_STATUS_NOT_ENOUGH_INFORMATION,
+)
+EVALUATION_ERROR_ROW_COUNT_MISMATCH = "predicted and expected row counts differ"
+EVALUATION_MODEL_CALLS_PER_ROW = 1
+EVALUATION_MOCK_PAID_MODEL_CALLS = 0
+EVALUATION_APPROX_TEXT_INPUT_TOKENS_PER_CLAIM = 900
+EVALUATION_APPROX_IMAGE_INPUT_TOKENS_PER_IMAGE = 1200
+EVALUATION_APPROX_OUTPUT_TOKENS_PER_CLAIM = 450
+EVALUATION_TOKENS_PER_MTOK = 1_000_000
+EVALUATION_SONNET_INPUT_PRICE_PER_MTOK = 3.0
+EVALUATION_SONNET_OUTPUT_PRICE_PER_MTOK = 15.0
+EVALUATION_OPUS_INPUT_PRICE_PER_MTOK = 5.0
+EVALUATION_OPUS_OUTPUT_PRICE_PER_MTOK = 25.0
+EVALUATION_BATCH_DISCOUNT_FACTOR = 0.5
+EVALUATION_CACHE_WRITE_MULTIPLIER = 1.25
+EVALUATION_CACHE_READ_MULTIPLIER = 0.1
+EVALUATION_RPM_UNIT = "requests/minute"
+EVALUATION_TPM_UNIT = "tokens/minute"
+EVALUATION_OPERATIONAL_BATCHING_NOTE = (
+    "Batching should group independent claim rows while preserving one VLM call per claim; "
+    "cache hits should be checked before scheduling paid calls."
+)
+EVALUATION_OPERATIONAL_RETRY_NOTE = (
+    "The Claude client uses bounded retry with backoff, then the pipeline emits a valid "
+    "fallback row if retries are exhausted."
+)
+EVALUATION_OPERATIONAL_COST_NOTE = (
+    "Vision is treated as input tokens. Costs below use rough token assumptions, not SDK usage telemetry."
+)
