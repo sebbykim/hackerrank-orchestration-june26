@@ -526,3 +526,35 @@ CLAIM_EVIDENCE_NEEDED_BY_OBJECT = MappingProxyType(
         CLAIM_OBJECT_PACKAGE: "clear image of the package area or contents relevant to the claim",
     }
 )
+
+MODEL_CONTEXT_KEY_INPUT_ROW = "input_row"
+MODEL_CONTEXT_KEY_EXTRACTED_CLAIM = "extracted_claim"
+MODEL_CONTEXT_KEY_PREFILTER = "prefilter"
+MODEL_CONTEXT_KEY_EVIDENCE_REQUIREMENT = "evidence_requirement"
+MODEL_CONTEXT_KEY_HISTORY = "history"
+
+MODEL_RESPONSE_KEY_PER_IMAGE = "per_image"
+MODEL_RESPONSE_KEY_CLAIM_LEVEL = "claim_level"
+MODEL_IMAGE_KEY_IMAGE_ID = "image_id"
+MODEL_IMAGE_KEY_VALID_IMAGE = "valid_image"
+MODEL_IMAGE_KEY_SUPPORTS_CLAIM = "supports_claim"
+MODEL_IMAGE_KEY_EVIDENCE_STANDARD_MET = "evidence_standard_met"
+MODEL_IMAGE_KEY_ISSUE_TYPE = "issue_type"
+MODEL_IMAGE_KEY_OBJECT_PART = "object_part"
+MODEL_IMAGE_KEY_SEVERITY = "severity"
+MODEL_IMAGE_KEY_RISK_FLAGS = "risk_flags"
+MODEL_IMAGE_KEY_CONFIDENCE = "confidence"
+MODEL_IMAGE_KEY_REASON = "reason"
+MODEL_CLAIM_KEY_UNCERTAINTY = "uncertainty"
+MODEL_CLAIM_KEY_EVIDENCE_NEEDED = "evidence_needed"
+MODEL_UNKNOWN_IMAGE_ID = "unknown_image"
+MODEL_CONFIDENCE_SUPPORTING = 1.0
+MODEL_CONFIDENCE_NOT_SUPPORTING = 0.0
+
+MOCK_REASON_SUPPORTING_IMAGE = "Mock marks the first usable image as supporting the extracted claim."
+MOCK_REASON_NON_SUPPORTING_IMAGE = "Mock leaves non-primary images as context only."
+MOCK_REASON_UNUSABLE_IMAGE = "Mock treats this image as unusable because prefilter metadata says it did not decode."
+MOCK_EVIDENCE_REASON_SUPPORTED = "Mock evidence met because at least one usable image is available."
+MOCK_EVIDENCE_REASON_NOT_ENOUGH_INFORMATION = "Mock evidence not met because no usable image is available."
+MOCK_STATUS_JUSTIFICATION_SUPPORTED = "Mock supports the extracted claim using the first usable image."
+MOCK_STATUS_JUSTIFICATION_NOT_ENOUGH_INFORMATION = "Mock cannot support the extracted claim without a usable image."
