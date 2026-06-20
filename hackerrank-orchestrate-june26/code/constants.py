@@ -665,3 +665,15 @@ CACHE_KEY_VERSION_VALUE = "cache_key_v1"
 CACHE_JSON_INDENT = 2
 HISTORY_NO_FLAGS = "none"
 HISTORY_RISK_ZERO_COUNT = 0
+
+PIPELINE_CLIENT_MOCK = "mock"
+PIPELINE_CLIENT_ENV_VAR = "CLAIM_PIPELINE_CLIENT"
+PIPELINE_FALLBACK_EVIDENCE_REASON = "Automated review could not complete for this claim."
+PIPELINE_FALLBACK_STATUS_JUSTIFICATION = "Fallback row emitted after pipeline processing failed."
+MAIN_ARG_CLIENT = "--client"
+MAIN_ARG_CLAIMS = "--claims"
+MAIN_ARG_OUTPUT = "--output"
+MAIN_ARG_CACHE_DIR = "--cache-dir"
+MAIN_ARG_CLIENT_CHOICES = (PIPELINE_CLIENT_MOCK,)
+MAIN_DESCRIPTION = "Generate damage-claim predictions with the deterministic mock pipeline."
+MAIN_UNSUPPORTED_CLIENT_TEMPLATE = "unsupported client: {client_name}"
