@@ -101,7 +101,7 @@ from io_loaders import (
 )
 from metrics import evaluate_predictions
 from mock_model import MockModelClient
-from model_client import ClaudeModelClient
+from model_client import ClaudeModelClient, load_env_file
 from pipeline import process_claim
 
 
@@ -124,6 +124,7 @@ def _has_api_key() -> bool:
     Secrets are read only from the environment and never printed or included in
     the report, preserving the AGENTS/CODEX secret-handling contract.
     """
+    load_env_file()
     return bool(os.environ.get(ANTHROPIC_API_KEY_ENV_VAR))
 
 

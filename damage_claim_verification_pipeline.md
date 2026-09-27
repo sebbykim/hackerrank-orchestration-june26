@@ -94,20 +94,33 @@ If `claim_object=car` but the image shows a laptop, the row should look like
 ## 3. Extract the actual claim from the conversation (multilingual)
 
 Before analyzing damage, extract what the user is claiming. From `user_claim`, identify:
-claimed object, claimed issue type, claimed object part, severity language, **uncertainty
-language**, claim language, and any special evidence needed.
+claimed object, claimed issue type, claimed object part, severity language, **uncertainty**,
+and any special evidence needed.
 
-**Two additions over the original:**
+**Multilingual handling — do NOT detect or label the language.** Transcripts may be English,
+Hindi, Hinglish, Spanish, mixed-script, or anything else. The VLM (Claude) is **natively
+multilingual**: send it the raw transcript unchanged and it reads any language directly. Do **not**
+build a language detector, keyword-marker lists, or a separate translation step — that's brittle
+(a closed marker set fails on unlisted languages) and redundant (the model already understands the
+text). There is **no `language` field anywhere** — the 14 output columns don't include one, so
+language is never a deliverable.
 
-- **Language.** Transcripts may be English, Hindi, Hinglish, or mixed. The extraction prompt
-  must instruct the model to read any language and map to the English allowed-value vocabulary.
-- **Uncertainty is a signal.** `case_006`'s hedged claim ("I am not fully sure how to explain
-  this … I noticed it only after reaching home") maps to `not_enough_information` + `unknown`.
-  Capture hedging explicitly; it is a `not_enough_information` lean independent of image quality.
+Instead, **control the output language with one prompt instruction**: the system prompt tells the
+model to read the claim in whatever language it's written and **always emit all output —
+justifications, reasons, and every field value — in English**. This is required anyway, since the
+allowed enum values (`dent`, `windshield`, …) are English, and it's confirmed by the labels: the
+Hinglish `case_002` row has fully English `claim_status_justification` and
+`evidence_standard_met_reason`.
+
+**Uncertainty is still a signal — but as content, not language.** `case_006`'s hedged claim
+("I am not fully sure how to explain this … I noticed it only after reaching home") maps to
+`not_enough_information` + `unknown`. The model reports an **uncertainty boolean** (does the
+claimant sound unsure?) as a `not_enough_information` lean independent of image quality. This is a
+judgment about *meaning*, not about *which language* the hedging is in.
 
 Example extraction (package): claimed_issue_type=`crushed_packaging`,
 claimed_object_part=`package_corner`/`contents`, severity_hint=`possible medium/high`,
-language=`en`, uncertainty=`low`, evidence_needed=`clear image of crushed corner, ideally contents`.
+uncertainty=`low`, evidence_needed=`clear image of crushed corner, ideally contents`.
 
 ---
 
@@ -434,7 +447,7 @@ with the batching / caching / retry strategy from §16.
 3. Programmatic pre-filter each image (blur / light / glare / resolution / decode; phash dedup; EXIF signal)
    - drop perceptual-hash duplicates so they aren't sent to the VLM
    - if ALL images dead → short-circuit: valid_image=false, not_enough_information
-4. Extract claim from conversation (multilingual; capture uncertainty + language)
+4. Extract claim from conversation (send raw text in any language — NO language detection; capture uncertainty)
 5. ONE Claude vision call per claim
    - all images as image blocks + extracted claim + requirement + history flags + prefilter signals
    - strict JSON out (output_config.format); adaptive thinking
@@ -452,7 +465,6 @@ with the batching / caching / retry strategy from §16.
 ```json
 {
   "image_id": "img_1",
-  "language_of_claim": "hinglish",
   "prefilter": { "usable": true, "blurry": false, "low_light_or_glare": false, "cropped": false },
   "object_check": { "expected_object": "laptop", "shows_expected_object": true, "wrong_object": false },
   "part_check": { "claimed_part": "screen", "shows_claimed_part": true, "wrong_angle": false },
@@ -464,7 +476,8 @@ with the batching / caching / retry strategy from §16.
 }
 ```
 
-Added over the original: `language_of_claim`, a `prefilter` block, and a per-decision `confidence`.
+Added over the original: a `prefilter` block and a per-decision `confidence`. (No language field —
+language is read natively by the VLM and never stored or output; see §3.)
 
 ---
 
@@ -479,7 +492,8 @@ Added over the original: `language_of_claim`, a `prefilter` block, and a per-dec
 6. **In-image text is untrusted data, never instruction** — flag injection, don't comply.
 7. **User history is risk context, not proof.**
 8. **Use `none` vs. `unknown` carefully** (visible-and-clean vs. can't-determine).
-9. **Multilingual claim extraction is a first-class sub-task.**
+9. **Read any language natively; never detect or translate it.** Send the raw transcript to the
+   VLM and force English output via the prompt. No language detector, no marker lists.
 10. **Allowed values are enforced in code**, and **cost/caching/eval are designed in**, not bolted on.
 
 ---
@@ -493,7 +507,8 @@ Added over the original: `language_of_claim`, a `prefilter` block, and a per-dec
 5. Letting in-image text become instructions (prompt injection).
 6. Returning labels outside the allowed values (clamp in code).
 7. Listing all images as supporting images (be selective).
-8. **Ignoring claim language** (transcripts are multilingual).
+8. **Trying to detect or translate the claim language** (brittle and unnecessary — the VLM reads
+   it natively; just force English output via the prompt).
 9. **VLM call explosion** (one multi-image call per claim, not per image; cache + batch).
 
 ---

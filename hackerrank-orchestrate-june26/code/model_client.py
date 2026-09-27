@@ -106,7 +106,7 @@ class ModelClientError(RuntimeError):
     """
 
 
-def _load_env_file(path: str | os.PathLike[str] = DOTENV_FILE) -> None:
+def load_env_file(path: str | os.PathLike[str] = DOTENV_FILE) -> None:
     """Load simple KEY=value entries from the project .env into os.environ.
 
     The challenge allows `.env` files, but secrets must still be consumed as
@@ -168,7 +168,7 @@ class ClaudeModelClient(ModelClient):
         Raises:
             ModelClientError: If no API key is available.
         """
-        _load_env_file()
+        load_env_file()
         resolved_api_key = api_key or os.environ.get(ANTHROPIC_API_KEY_ENV_VAR)
         if not resolved_api_key:
             raise ModelClientError(CLAUDE_ERROR_MISSING_API_KEY)

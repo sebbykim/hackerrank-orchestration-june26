@@ -168,13 +168,21 @@ VLM fields (design §5.2) — do not implement them here.
 ## Phase 3 — Claim extraction (text only, no model yet)
 
 **Goal:** the structured extracted-claim from `user_claim` (design §3). In mock-first mode this is
-a deterministic, rules/keyword-based extractor sufficient to drive the pipeline and the mock; the
-real VLM later refines issue/part. Keep it simple and language-aware in intent.
+a deterministic, rules-based extractor sufficient to drive the pipeline and the mock; the real VLM
+later refines issue/part and reads the claim in any language natively.
+
+> **NO LANGUAGE DETECTION (design §3).** Do **not** detect, label, or translate the claim
+> language. There is **no `language` field**. Delete any `CLAIM_LANGUAGE_*` constants,
+> `*_MARKERS` frozensets, `_detect_language()`, and `_contains_marker()` that were scaffolded —
+> they are brittle (closed marker set) and redundant (the VLM reads any language). Output is
+> always English, enforced by the prompt in Phase 5, never by code here.
 
 1. `claim_extraction.py`: `extract_claim(user_claim, claim_object)` → dict with claimed_issue_type,
-   claimed_object_part, severity_hint, language (best-effort), uncertainty (hedging detected),
-   evidence_needed. Capture **uncertainty as a signal** (design §3).
-2. **DoD:** returns a stable structure for every sample row; no crashes on multilingual text.
+   claimed_object_part, severity_hint, **uncertainty (hedging detected)**, evidence_needed.
+   Capture **uncertainty as a content signal** (design §3) — it is about meaning, not language.
+   **No `language` key.**
+2. **DoD:** returns a stable structure for every sample row; no crashes on text in any language;
+   the extracted dict contains no language field and no marker logic remains in the codebase.
 
 ## Phase 4 — Model interface + deterministic mock
 
@@ -195,10 +203,16 @@ real VLM later refines issue/part. Keep it simple and language-aware in intent.
    - `build_messages(claim_context, images)` → the system + user message blocks (reviewer rules,
      allowed-value lists, anti-injection rule, extracted claim, matched requirement, history flags,
      pre-filter measurements, image blocks).
+   - **English-output instruction (design §3):** the system prompt must include a line such as:
+     *"The claim conversation may be in any language (English, Hindi, Hinglish, Spanish, mixed, or
+     other). Read it directly — do not translate it as a separate step. Always write every part of
+     your output (justifications, reasons, and all field values) in English."* This is the **only**
+     place language is handled — there is no language detection anywhere in the code.
    - `RESPONSE_JSON_SCHEMA` → the strict json_schema mirroring the per-image breakdown + the 14
-     output fields. Single source of truth for the model's output shape.
-2. **DoD:** messages build for every sample row; schema covers exactly the needed fields; no
-   assistant prefill; `PROMPT_VERSION` referenced.
+     output fields. Single source of truth for the model's output shape. **No `language` field.**
+2. **DoD:** messages build for every sample row; the English-output instruction is present; schema
+   covers exactly the needed fields (no language field); no assistant prefill; `PROMPT_VERSION`
+   referenced.
 
 ## Phase 6 — Aggregation + validation + cache (pure logic)
 
