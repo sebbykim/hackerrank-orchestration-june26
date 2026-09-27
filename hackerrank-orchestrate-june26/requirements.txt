@@ -1,0 +1,5 @@
+anthropic==0.57.1
+opencv-python==4.10.0.84
+numpy==2.0.2
+imagehash==4.3.1
+Pillow==10.4.0
